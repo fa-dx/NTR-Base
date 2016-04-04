@@ -39,6 +39,7 @@
             this.窗口ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.命令输入器ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.asmScratchPadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.disconnectTimer = new System.Windows.Forms.Timer(this.components);
             this.tableLayoutPanel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -142,6 +143,11 @@
             this.asmScratchPadToolStripMenuItem.Text = "Asm ScratchPad";
             this.asmScratchPadToolStripMenuItem.Click += new System.EventHandler(this.asmScratchPadToolStripMenuItem_Click);
             // 
+            // disconnectTimer
+            // 
+            this.disconnectTimer.Interval = 10000;
+            this.disconnectTimer.Tick += new System.EventHandler(this.disconnectTimer_Tick);
+            // 
             // CmdWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -180,6 +186,7 @@
 		private System.Windows.Forms.StatusStrip statusStrip1;
 		private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.ToolStripMenuItem asmScratchPadToolStripMenuItem;
+        private System.Windows.Forms.Timer disconnectTimer;
 
 
     }

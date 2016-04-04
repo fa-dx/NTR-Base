@@ -120,12 +120,24 @@ namespace ntrclient
 			
 		}
 
+        public void startAutoDisconnect()
+        {
+            disconnectTimer.Enabled = true;
+
+        }
+
 		private void toolStripStatusLabel1_Click(object sender, EventArgs e) {
 
 		}
 
         private void asmScratchPadToolStripMenuItem_Click(object sender, EventArgs e) {
             (new AsmEditWindow()).Show();
+        }
+
+        private void disconnectTimer_Tick(object sender, EventArgs e)
+        {
+            disconnectTimer.Enabled = false;
+            runCmd("disconnect()");
         }
     }
 }

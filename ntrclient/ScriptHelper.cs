@@ -20,6 +20,13 @@ namespace ntrclient {
             }
         }
 
+        public void remoteplay()
+        {
+            Program.ntrClient.sendEmptyPacket(901);
+            Program.ntrClient.log("Will be disconnected in 10 seconds to enhance performance.");
+            Program.gCmdWindow.startAutoDisconnect();
+        }
+        
         public void bpdis(uint id) {
             Program.ntrClient.sendEmptyPacket(11, id, 0, 3);
         }
