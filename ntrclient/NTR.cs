@@ -1,23 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 
-namespace ntrclient {
-	class NtrClient {
+namespace ntrbase
+{
+	class NTR
+    {
 		public String host;
 		public int port;
 		public TcpClient tcp;
 		public NetworkStream netStream;
 		public Thread packetRecvThread;
 		private object syncLock = new object();
-		int heartbeatSendable;
+		public int heartbeatSendable;
 
 
 
@@ -28,37 +27,47 @@ namespace ntrclient {
 		string lastReadMemFileName = null;
 		public volatile int progress = -1;
 
-		int readNetworkStream(NetworkStream stream, byte[] buf, int length) {
+
+        int readNetworkStream(NetworkStream stream, byte[] buf, int length)
+        {
 			int index = 0;
 			bool useProgress = false;
 
-			if (length > 100000) {
+			if (length > 100000)
+            {
 				useProgress = true;
 			}
 			do {
-				if (useProgress) {
+				if (useProgress)
+                {
 					progress =  (int) (((double)(index) / length) * 100);
 				}
 				int len = stream.Read(buf, index, length - index);
-				if (len == 0) {
+				if (len == 0)
+                {
 					return 0;
 				}
 				index += len;
-			} while (index < length);
+			}
+            while (index < length);
 			progress = -1;
 			return length;
 		}
 
-		void packetRecvThreadStart() {
+		void packetRecvThreadStart()
+        {
 			byte[] buf = new byte[84];
 			UInt32[] args = new UInt32[16];
 			int ret;
 			NetworkStream stream = netStream;
 
-			while (true) {
-				try {
+			while (true)
+            {
+				try
+                {
 					ret = readNetworkStream(stream, buf, buf.Length);
-					if (ret == 0) {
+					if (ret == 0)
+                    {
 						break;
 					}
 					int t = 0;
@@ -69,40 +78,48 @@ namespace ntrclient {
 					UInt32 type = BitConverter.ToUInt32(buf, t);
 					t += 4;
 					UInt32 cmd = BitConverter.ToUInt32(buf, t);
-					for (int i = 0; i < args.Length; i++) {
+					for (int i = 0; i < args.Length; i++)
+                    {
 						t += 4;
 						args[i] = BitConverter.ToUInt32(buf, t);
 					}
 					t += 4;
 					UInt32 dataLen = BitConverter.ToUInt32(buf, t);
-					if (cmd != 0) {
+					if (cmd != 0)
+                    {
 						log(String.Format("packet: cmd = {0}, dataLen = {1}", cmd, dataLen));
 					}
 
-					if (magic != 0x12345678) {
+					if (magic != 0x12345678)
+                    {
 						log(String.Format("broken protocol: magic = {0}, seq = {1}", magic, seq));
 						break;
 					}
 
-					if (cmd == 0) {
-						if (dataLen != 0) {
+					if (cmd == 0)
+                    {
+						if (dataLen != 0)
+                        {
 							byte[] dataBuf = new byte[dataLen];
 							readNetworkStream(stream, dataBuf, dataBuf.Length);
 							string logMsg = Encoding.UTF8.GetString(dataBuf);
 							log(logMsg);
 						}
-						lock (syncLock) {
+						lock (syncLock)
+                        {
 							heartbeatSendable = 1;
 						}
 						continue;
 					}
-					if (dataLen != 0) {
+					if (dataLen != 0)
+                    {
 						byte[] dataBuf = new byte[dataLen];
 						readNetworkStream(stream, dataBuf, dataBuf.Length);
 						handlePacket(cmd, seq, dataBuf);
 					}
 				}
-				catch (Exception e) {
+				catch (Exception e)
+                {
 					log(e.Message);
 					break;
 				}
@@ -112,22 +129,27 @@ namespace ntrclient {
 			disconnect(false);
 		}
 
-		string byteToHex(byte[] datBuf, int type) {
+		string byteToHex(byte[] datBuf, int type)
+        {
 			string r = "";
-			for (int i = 0; i < datBuf.Length; i++) {
+			for (int i = 0; i < datBuf.Length; i++)
+            {
 				r += datBuf[i].ToString("X2") + " ";
 			}
 			return r;
 		}
 
-		void handleReadMem(UInt32 seq, byte[] dataBuf) {
-			if (seq != lastReadMemSeq) {
+		void handleReadMem(UInt32 seq, byte[] dataBuf)
+        {
+			if (seq != lastReadMemSeq)
+            {
 				log("seq != lastReadMemSeq, ignored");
 				return;
 			}
 			lastReadMemSeq = 0;
 			string fileName = lastReadMemFileName;
-			if (fileName != null) {
+			if (fileName != null)
+            {
 				FileStream fs = new FileStream(fileName, FileMode.Create);
 				fs.Write(dataBuf, 0, dataBuf.Length);
 				fs.Close();
@@ -138,20 +160,25 @@ namespace ntrclient {
 
 		}
 
-		void handlePacket(UInt32 cmd, UInt32 seq, byte[] dataBuf) {
-			if (cmd == 9) {
+		void handlePacket(UInt32 cmd, UInt32 seq, byte[] dataBuf)
+        {
+			if (cmd == 9)
+            {
 				handleReadMem(seq, dataBuf);
 			}
 		}
 
-		public void setServer(String serverHost, int serverPort) {
+		public void setServer(String serverHost, int serverPort)
+        {
 			host = serverHost;
 			port = serverPort;
 		}
 
 
-		public void connectToServer() {
-			if (tcp != null) {
+		public void connectToServer()
+        {
+			if (tcp != null)
+            {
 				disconnect();
 			}
 			tcp = new TcpClient();
@@ -165,24 +192,31 @@ namespace ntrclient {
 			log("Server connected.");
 		}
 
-		public void disconnect(bool waitPacketThread = true) {
-			try {
-				if (tcp != null) {
+		public void disconnect(bool waitPacketThread = true)
+        {
+			try
+            {
+				if (tcp != null)
+                {
 					tcp.Close();
 				}
-				if (waitPacketThread) {
-					if (packetRecvThread != null) {
+				if (waitPacketThread)
+                {
+					if (packetRecvThread != null)
+                    {
 						packetRecvThread.Join();
 					}
 				}
 			}
-			catch (Exception ex) {
+			catch (Exception ex)
+            {
 				log(ex.Message);
 			}
 			tcp = null;
 		}
 
-		public void sendPacket(UInt32 type, UInt32 cmd, UInt32[] args, UInt32 dataLen) {
+		public void sendPacket(UInt32 type, UInt32 cmd, UInt32[] args, UInt32 dataLen)
+        {
 			int t = 0;
 			currentSeq += 1000;
 			byte[] buf = new byte[84];
@@ -193,10 +227,12 @@ namespace ntrclient {
 			BitConverter.GetBytes(type).CopyTo(buf, t);
 			t += 4;
 			BitConverter.GetBytes(cmd).CopyTo(buf, t);
-			for (int i = 0; i < 16; i++) {
+			for (int i = 0; i < 16; i++)
+            {
 				t += 4;
 				UInt32 arg = 0;
-				if (args != null) {
+				if (args != null)
+                {
 					arg = args[i];
 				}
 				BitConverter.GetBytes(arg).CopyTo(buf, t);
@@ -206,13 +242,15 @@ namespace ntrclient {
 			netStream.Write(buf, 0, buf.Length);
 		}
 
-		public void sendReadMemPacket(UInt32 addr, UInt32 size, UInt32 pid, string fileName) {
+		public void sendReadMemPacket(UInt32 addr, UInt32 size, UInt32 pid, string fileName)
+        {
 			sendEmptyPacket(9, pid, addr, size);
 			lastReadMemSeq = currentSeq;
 			lastReadMemFileName = fileName;
 		}
 
-		public void sendWriteMemPacket(UInt32 addr, UInt32 pid, byte[] buf) {
+		public void sendWriteMemPacket(UInt32 addr, UInt32 pid, byte[] buf)
+        {
 			UInt32[] args = new UInt32[16];
 			args[0] = pid;
 			args[1] = addr;
@@ -221,10 +259,14 @@ namespace ntrclient {
 			netStream.Write(buf, 0, buf.Length);
 		}
 
-		public void sendHeartbeatPacket() {
-			if (tcp != null) {
-				lock (syncLock) {
-					if (heartbeatSendable == 1) {
+		public void sendHeartbeatPacket()
+        {
+			if (tcp != null)
+            {
+				lock (syncLock)
+                {
+					if (heartbeatSendable == 1)
+                    {
 						heartbeatSendable = 0;
 						sendPacket(0, 0, null, 0);
 					}
@@ -233,15 +275,18 @@ namespace ntrclient {
 
 		}
 
-		public void sendHelloPacket() {
+		public void sendHelloPacket()
+        {
 			sendPacket(0, 3, null, 0);
 		}
 
-		public void sendReloadPacket() {
+		public void sendReloadPacket()
+        {
 			sendPacket(0, 4, null, 0);
 		}
 
-		public void sendEmptyPacket(UInt32 cmd, UInt32 arg0 = 0, UInt32 arg1 = 0, UInt32 arg2 = 0) {
+		public void sendEmptyPacket(UInt32 cmd, UInt32 arg0 = 0, UInt32 arg1 = 0, UInt32 arg2 = 0)
+        {
 			UInt32[] args = new UInt32[16];
 
 			args[0] = arg0;
@@ -252,7 +297,8 @@ namespace ntrclient {
 
 	
 		
-		public void sendSaveFilePacket(string fileName, byte[] fileData) {
+		public void sendSaveFilePacket(string fileName, byte[] fileData)
+        {
 			byte[] fileNameBuf = new byte[0x200];
 			Encoding.UTF8.GetBytes(fileName).CopyTo(fileNameBuf, 0);
 			sendPacket(1, 1, null, (UInt32)(fileNameBuf.Length + fileData.Length));
@@ -260,14 +306,19 @@ namespace ntrclient {
 			netStream.Write(fileData, 0, fileData.Length);
 		}
 
-		public void log(String msg) {
-			if (onLogArrival != null) {
+		public void log(String msg)
+        {
+			if (onLogArrival != null)
+            {
 				onLogArrival.Invoke(msg);
 			}
-			try {
+			try
+            {
 
 				Program.gCmdWindow.BeginInvoke(Program.gCmdWindow.delAddLog, msg);
-			} catch(Exception ex) {
+			}
+            catch (Exception ex)
+            {
 				MessageBox.Show(ex.Message);
 
 			}
